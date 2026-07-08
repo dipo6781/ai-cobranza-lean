@@ -17,10 +17,15 @@ if not DATABASE_URL:
 # 2. Configuración del motor asíncrono (OPTIMIZADO PARA PGBOUNCER DE SUPABASE)
 # CRÍTICO: statement_cache_size=0 y prepared_statement_cache_size=0
 # Esto evita el error "DuplicatePreparedStatementError" con PgBouncer en modo transaction
+# OPTIMIZACIÓN DE RENDIMIENTO: pool_size y max_overflow ajustados para producción
 engine = create_async_engine(
     DATABASE_URL,
     echo=False,
     pool_pre_ping=True,
+    pool_size=10,  # Número de conexiones permanentes en el pool
+    max_overflow=20,  # Conexiones adicionales temporales bajo carga
+    pool_timeout=30,  # Tiempo de espera para obtener conexión
+    pool_recycle=1800,  # Reciclar conexiones cada 30 minutos
     connect_args={
         "statement_cache_size": 0,
         "prepared_statement_cache_size": 0,

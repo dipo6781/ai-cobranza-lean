@@ -2,8 +2,10 @@ import os
 import json
 import hashlib
 from pathlib import Path
+from functools import lru_cache
 from fastapi import FastAPI, Depends, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import ORJSONResponse
 from pydantic import BaseModel
 import httpx
 from dotenv import load_dotenv
@@ -21,11 +23,12 @@ load_dotenv(dotenv_path=env_path)
 if not os.getenv("GROQ_API_KEY"):
     print("⚠️ ADVERTENCIA: No se encontró GROQ_API_KEY en el archivo .env")
 
-# 2. Inicializar FastAPI
+# 2. Inicializar FastAPI con optimizaciones
 app = FastAPI(
     title="Sistema de Cobranza IA - MVP Lean",
     description="API Multi-tenant con Caché de Templates y Persistencia.",
-    version="3.0.0"
+    version="3.1.0-performance",
+    default_response_class=ORJSONResponse  # JSON más rápido que el estándar
 )
 
 # 3. Configuración CORS
@@ -45,12 +48,25 @@ SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6
 supabase_auth = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 # ==========================================
+# CONFIGURACIÓN DE CONEXIONES HTTP (Connection Pooling)
+# ==========================================
+# Reutilizar conexiones HTTP para llamadas a Groq API
+httpx_client = httpx.AsyncClient(
+    timeout=30.0,
+    limits=httpx.Limits(max_keepalive_connections=10, max_connections=20)
+)
+
+# ==========================================
 # MODELOS PYDANTIC
 # ==========================================
 class CobranzaRequest(BaseModel):
     cliente_id_interno: str
     monto_deuda: float
     dias_mora: int
+
+    class Config:
+        # Optimización: validar solo los campos necesarios
+        extra = 'ignore'
 
 # ==========================================
 # DEPENDENCIA: AUTENTICACIÓN Y MULTI-TENANCY
@@ -82,7 +98,15 @@ async def get_current_org_id(
 # ==========================================
 @app.get("/")
 def read_root():
-    return {"status": "Sistema Activo", "version": "3.0.0-MultiTenant-Cache"}
+    return {"status": "Sistema Activo", "version": "3.1.0-Performance-Optimized"}
+
+# ==========================================
+# EVENTOS DE STARTUP Y SHUTDOWN
+# ==========================================
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cerrar el cliente HTTP al detener la aplicación."""
+    await httpx_client.aclose()
 
 # ==========================================
 # ENDPOINT PRINCIPAL: GENERAR MENSAJE (CON CACHÉ)
@@ -141,14 +165,14 @@ async def generar_mensaje_cobranza(
                 f"Genera mensaje corto (máx 300 caracteres) para WhatsApp, ofreciendo plan de pago en 2 cuotas."
             )
 
-            async with httpx.AsyncClient() as client:
-                response = await client.post(groq_url, headers=headers, json={
-                    "model": "llama-3.3-70b-versatile",
-                    "messages": [{"role": "system", "content": prompt_sistema}, {"role": "user", "content": prompt_usuario}],
-                    "temperature": 0.7, "max_tokens": 300
-                }, timeout=30.0)
-                response.raise_for_status()
-                respuesta_ia = response.json()["choices"][0]["message"]["content"].strip()
+            # Usar el cliente HTTP con connection pooling en lugar de crear uno nuevo
+            response = await httpx_client.post(groq_url, headers=headers, json={
+                "model": "llama-3.3-70b-versatile",
+                "messages": [{"role": "system", "content": prompt_sistema}, {"role": "user", "content": prompt_usuario}],
+                "temperature": 0.7, "max_tokens": 300
+            })
+            response.raise_for_status()
+            respuesta_ia = response.json()["choices"][0]["message"]["content"].strip()
                 
         except Exception as e:
             respuesta_ia = f"Error de IA: {str(e)}"
