@@ -1,34 +1,54 @@
-# Entornos virtuales y caché de Python
-venv/
-env/
+```
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Dependencias de Node.js
-node_modules/
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
 
-# Variables de entorno y archivos sensibles
-.env
-.env.local
-.env.*.local
-*.pem
-*.key
-
-# IDEs y Editores
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
-# Sistemas operativos
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+*.env.*
+
+# Coverage
+.coverage
+coverage/
+htmlcov/
+
+# Temporary files
+*.tmp
 .DS_Store
 Thumbs.db
-
-# Logs y bases de datos locales
-*.log
-*.sqlite3
+```
