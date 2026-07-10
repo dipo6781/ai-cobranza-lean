@@ -39,8 +39,8 @@ app.add_middleware(
 
 
 # ==========================================
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://ixpxaphdhunfkpmlvcid.supabase.co")
-SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4cHhhcGhkaHVuZmtwbWx2Y2lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMTEwMDAsImV4cCI6MjA5Njg4NzAwMH0.EDv87IQ5DV5IrB4SUGgbdOmy3YI0-VTiWlDc4lzWCuU") # Asegúrate de que esté en tu .env
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY") # Asegúrate de que esté en tu .env
 supabase_auth = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 # ==========================================
