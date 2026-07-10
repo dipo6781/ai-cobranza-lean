@@ -1,34 +1,51 @@
-# Entornos virtuales y caché de Python
-venv/
-env/
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Dependencias de Node.js
-node_modules/
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
-
-# Variables de entorno y archivos sensibles
+# Variables de entorno (CRÍTICO)
 .env
 .env.local
 .env.*.local
-*.pem
-*.key
+frontend/.env
+frontend/.env.local
 
-# IDEs y Editores
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# Sistemas operativos
+# Sistema
 .DS_Store
 Thumbs.db
 
-# Logs y bases de datos locales
+# Logs
 *.log
+logs/
+
+# Base de datos local
 *.sqlite3
+*.db
+
+# Cloudflare Tunnel
+cloudflared
+*.yml
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Seguridad
+*.pem
+*.key
+*.cert
