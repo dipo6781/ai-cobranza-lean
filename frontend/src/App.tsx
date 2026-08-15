@@ -13,6 +13,7 @@ export default function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loadingAuth, setLoadingAuth] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Estado del formulario
   const [formData, setFormData] = useState({ cliente_id_interno: "", monto_deuda: "", dias_mora: "" });
@@ -22,18 +23,39 @@ export default function App() {
 
   // Manejo de sesión de Supabase
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) setAuthError(null);
+    }).catch(err => {
+      console.error("Error al obtener sesión:", err);
+      setAuthError("Error de conexión con el servidor de autenticación");
+    });
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) setAuthError(null);
+    });
     return () => subscription.unsubscribe();
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoadingAuth(true);
+    setAuthError(null);
     setError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setError(error.message);
-    setLoadingAuth(false);
+    
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        console.error("Error de autenticación:", error.message);
+        setAuthError(error.message);
+      }
+    } catch (err: any) {
+      console.error("Error de conexión:", err);
+      setAuthError("Error de conexión. Verifica que el backend esté disponible.");
+    } finally {
+      setLoadingAuth(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -89,14 +111,21 @@ export default function App() {
     return (
       <div style={{ maxWidth: "400px", margin: "50px auto", padding: "20px", fontFamily: "system-ui, sans-serif", textAlign: "center" }}>
         <h2 style={{ color: "#1e293b" }}>🔐 Acceso AI-Cobranza</h2>
-        {error && <p style={{ color: "#ef4444", background: "#fef2f2", padding: "10px", borderRadius: "6px" }}>{error}</p>}
+        {(authError || error) && (
+          <p style={{ color: "#ef4444", background: "#fef2f2", padding: "10px", borderRadius: "6px", marginBottom: "16px" }}>
+            ❌ {authError || error}
+          </p>
+        )}
         <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "20px" }}>
           <input type="email" placeholder="Email (ej: admin@prueba-cobranza.com)" value={email} onChange={e => setEmail(e.target.value)} required style={{ padding: "12px", border: "1px solid #cbd5e1", borderRadius: "6px" }} />
           <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} required style={{ padding: "12px", border: "1px solid #cbd5e1", borderRadius: "6px" }} />
           <button type="submit" disabled={loadingAuth} style={{ padding: "12px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", opacity: loadingAuth ? 0.7 : 1 }}>
-            {loadingAuth ? "Ingresando..." : "Iniciar Sesión"}
+            {loadingAuth ? "⏳ Ingresando..." : "Iniciar Sesión"}
           </button>
         </form>
+        <p style={{ marginTop: "20px", fontSize: "0.85rem", color: "#64748b" }}>
+          💡 ¿Problemas de conexión? Verifica que el backend esté corriendo en http://127.0.0.1:8000
+        </p>
       </div>
     );
   }
